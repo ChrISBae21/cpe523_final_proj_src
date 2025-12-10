@@ -8,10 +8,6 @@ Assumes:
   - One 32-bit hex word per line.
   - REAL[31:16] and IMAG[15:0] are signed Q1.15.
 
-Plots:
-  1. Magnitude spectrum |X[k]|
-  2. Real and imaginary parts vs bin/frequency
-
 No FFT computations are performed. It only reads and visualizes the data.
 
 Usage:
@@ -71,25 +67,10 @@ def load_mem_file(path: str) -> np.ndarray:
         data[i] = q15_from_word32(w)
     return data
 
-def bit_reverse_indices(N: int):
-    """Return a list of bit-reversed indices for length N."""
-    nbits = int(np.log2(N))
-    idx = np.arange(N)
-    rev = np.zeros(N, dtype=int)
-    for i in range(N):
-        b = i
-        r = 0
-        for _ in range(nbits):
-            r = (r << 1) | (b & 1)
-            b >>= 1
-        rev[i] = r
-    return rev
-
-
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Visualize a complex FFT .mem file (no FFT computed, just plotting)."
+        description="Visualize magnitude of a complex FFT .mem file (no FFT computation)."
     )
     parser.add_argument(
         "--mem_file",
@@ -109,14 +90,8 @@ def main():
     )
     parser.add_argument(
         "--title",
-        default="FFT Visualization",
-        help="Figure title.",
-    )
-    
-    parser.add_argument(
-        "--bitrev",
-        action="store_true",
-        help="Treat input as bit-reversed order and reorder to natural bin order before plotting.",
+        default=None,
+        help="Figure title (optional).",
     )
 
     args = parser.parse_args()
@@ -125,69 +100,46 @@ def main():
     X = load_mem_file(args.mem_file)
     N = len(X)
     print(f"[INFO] Loaded {N} complex bins.")
-    
-    if args.bitrev:
-        if (N & (N - 1)) != 0:
-            raise SystemExit("[ERROR] --bitrev only valid for power-of-two length")
-        perm = bit_reverse_indices(N)
-        X = X[perm]
-        print("[INFO] Applied bit-reversal permutation to bins.")
 
     mag = np.abs(X)
-    real = X.real
-    imag = X.imag
 
     if args.half:
         k = np.arange(N // 2)
         mag_plot = mag[: N // 2]
-        real_plot = real[: N // 2]
-        imag_plot = imag[: N // 2]
     else:
         k = np.arange(N)
         mag_plot = mag
-        real_plot = real
-        imag_plot = imag
 
     # Frequency axis if fs provided
     if args.fs is not None:
         fs = args.fs
-        freq_axis = k * fs / N
+        x_axis = k * fs / N
         x_label = "Frequency (Hz)"
         print(f"[INFO] Using fs = {fs} Hz for x-axis.")
     else:
-        freq_axis = k
+        x_axis = k
         x_label = "Bin index k"
         print("[INFO] No fs provided; x-axis uses bin indices.")
 
-    # ---------------- Plotting ----------------
-    plt.figure(figsize=(12, 8))
-    plt.suptitle(args.title, fontsize=14)
+    # ---------------- Plotting: magnitude only ----------------
+    plt.figure(figsize=(10, 5))
+    if args.title is not None:
+        plt.title(args.title)
+    else:
+        plt.title(f"Magnitude Spectrum ({args.mem_file})")
 
-    # Magnitude spectrum
-    ax1 = plt.subplot(2, 1, 1)
-    ax1.plot(freq_axis, mag_plot, label="|X[k]|")
-    ax1.set_xlabel(x_label)
-    ax1.set_ylabel("Magnitude")
-    ax1.set_title("Magnitude spectrum")
-    ax1.grid(True)
-    ax1.legend()
+    plt.plot(x_axis, mag_plot)
+    plt.xlabel(x_label)
+    plt.ylabel("Magnitude")
+    plt.grid(True)
 
-    # Real/Imag parts
-    ax2 = plt.subplot(2, 1, 2)
-    ax2.plot(freq_axis, real_plot, label="Re{X[k]}")
-    ax2.plot(freq_axis, imag_plot, label="Im{X[k]}", linestyle="--")
-    ax2.set_xlabel(x_label)
-    ax2.set_ylabel("Amplitude")
-    ax2.set_title("Real and Imag parts")
-    ax2.grid(True)
-    ax2.legend()
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-    # save figure
-    out_png = args.mem_file.replace(".mem", "_fft_visualization.png")
+    out_png = args.mem_file.replace(".mem", "_mag.png")
+    plt.tight_layout()
     plt.savefig(out_png)
-    print(f"[INFO] Saved figure to {out_png}")
+    print(f"[INFO] Saved magnitude figure to {out_png}")
+
+    # Uncomment if you want an interactive window:
+    # plt.show()
 
 
 if __name__ == "__main__":
