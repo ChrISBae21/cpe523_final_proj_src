@@ -210,7 +210,7 @@ module fft1024_core (
             ram0_if.addra = '0;
 
         if (write_to_ram0)
-            ram0_if.dina = logic'(A_out);
+            ram0_if.dina = DW_COMPLEX'(A_out);
         else
             ram0_if.dina = '0;
 
@@ -226,7 +226,7 @@ module fft1024_core (
             ram0_if.addrb = '0;
 
         if (write_to_ram0)
-            ram0_if.dinb = logic'(B_out);
+            ram0_if.dinb = DW_COMPLEX'(B_out);
         else
             ram0_if.dinb = '0;
 

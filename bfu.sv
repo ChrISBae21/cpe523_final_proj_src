@@ -126,7 +126,7 @@ endfunction
             A_s2       <= '0;
         end else if (en) begin
             complex_mul_raw(B_s1, W_s1, Tr_wide_s2, Ti_wide_s2);
-            A_s2 <= A_s1;
+            // A_s2 <= A_s1;
         end
     end
 
@@ -137,7 +137,7 @@ endfunction
             A_s3 <= '0;
         end else if (en) begin
             T_s3 <= fxp_truncate_f(Tr_wide_s2, Ti_wide_s2);
-            A_s3 <= A_s2;
+            A_s3 <= A_s1;
         end
     end
 
