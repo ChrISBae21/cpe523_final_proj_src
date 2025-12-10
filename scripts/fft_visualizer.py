@@ -67,6 +67,34 @@ def load_mem_file(path: str) -> np.ndarray:
         data[i] = q15_from_word32(w)
     return data
 
+def bit_reverse_indices(N: int) -> np.ndarray:
+    """
+    Return an array of length N where each entry is the bit-reversed index.
+    N must be a power of 2.
+    """
+    if N & (N - 1):
+        raise ValueError("N must be a power of 2 for bit-reversal")
+    nbits = int(np.log2(N))
+    rev = np.zeros(N, dtype=int)
+    for i in range(N):
+        b = i
+        r = 0
+        for _ in range(nbits):
+            r = (r << 1) | (b & 1)
+            b >>= 1
+        rev[i] = r
+    return rev
+
+
+def bit_reverse_array(x: np.ndarray) -> np.ndarray:
+    """
+    Reorder x into natural order if it is currently in bit-reversed order,
+    or vice versa (bit-reversal is its own inverse).
+    """
+    N = x.shape[0]
+    idx = bit_reverse_indices(N)
+    return x[idx]
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -89,6 +117,11 @@ def main():
         help="Plot only first N/2 FFT bins (positive frequencies).",
     )
     parser.add_argument(
+        "--bitrev",
+        action="store_true",
+        help="Bit-reverse the bin order before plotting (for DIT HW output).",
+    )
+    parser.add_argument(
         "--title",
         default=None,
         help="Figure title (optional).",
@@ -100,6 +133,10 @@ def main():
     X = load_mem_file(args.mem_file)
     N = len(X)
     print(f"[INFO] Loaded {N} complex bins.")
+
+    if args.bitrev:
+        print("[INFO] Applying bit-reversal to bin order.")
+        X = bit_reverse_array(X)
 
     mag = np.abs(X)
 
@@ -127,19 +164,24 @@ def main():
         plt.title(args.title)
     else:
         plt.title(f"Magnitude Spectrum ({args.mem_file})")
-
+    
+    if args.bitrev:
+        # filter out low values for better visualization
+        mean = np.mean(mag_plot)
+        var = np.var(mag_plot)
+        threshold = mean + 1.5 * np.sqrt(var)
+        mag_plot = np.where(mag_plot < threshold, 0, mag_plot)
+    
     plt.plot(x_axis, mag_plot)
     plt.xlabel(x_label)
     plt.ylabel("Magnitude")
     plt.grid(True)
 
-    out_png = args.mem_file.replace(".mem", "_mag.png")
+    out_suffix = "_mag_bitreversed.png" if args.bitrev else "_mag.png"
+    out_png = args.mem_file.replace(".mem", out_suffix)
     plt.tight_layout()
     plt.savefig(out_png)
     print(f"[INFO] Saved magnitude figure to {out_png}")
-
-    # Uncomment if you want an interactive window:
-    # plt.show()
 
 
 if __name__ == "__main__":
