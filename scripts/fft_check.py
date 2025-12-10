@@ -81,6 +81,7 @@ def compare_results(ref: np.ndarray, dut: np.ndarray):
     max_err = np.max(abs_err)
     mean_err = np.mean(abs_err)
     rms_err = np.sqrt(np.mean(abs_err**2))
+    EPILSON = 1e-6
 
     print("[RESULT] Comparison between reference and DUT:")
     print(f"         Length          : {len(ref)} samples")
@@ -88,15 +89,21 @@ def compare_results(ref: np.ndarray, dut: np.ndarray):
     print(f"         Mean abs error  : {mean_err:.6e}")
     print(f"         RMS error       : {rms_err:.6e}")
 
-    # Dump first few bins for sanity
-    print("\n[DEBUG] First 8 samples (ref, dut, diff):")
-    for i in range(min(8, len(ref))):
-        print(
-            f"  k={i:2d}: "
-            f"ref={ref[i]: .6f}, "
-            f"dut={dut[i]: .6f}, "
-            f"diff={diff[i]: .6e}"
-        )
+
+    if max_err > EPILSON:
+        # Dump first few bins for sanity
+        print("\n[DEBUG] First 8 samples (ref, dut, diff):")
+        for i in range(min(8, len(ref))):
+            print(
+                f"  k={i:2d}: "
+                f"ref={ref[i]: .6f}, "
+                f"dut={dut[i]: .6f}, "
+                f"diff={diff[i]: .6e}"
+            )
+        print("\n[ERROR] Mismatch detected between reference and DUT!")
+        return
+    
+    print("\n[INFO] Comparison complete. Results match within tolerance.")
 
 
 def main():

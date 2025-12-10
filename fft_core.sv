@@ -66,7 +66,7 @@ module fft1024_core (
     // Twiddle ROM (synchronous) – address is already delayed
     twiddle_rom tw_rom (
         .clk     (clk),
-        .addr    (twiddle_idx_d1),
+        .addr    (agu_tw_idx),
         .data_out(W_in)
     );
 

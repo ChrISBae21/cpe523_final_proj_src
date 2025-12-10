@@ -111,7 +111,7 @@ endfunction
             A_s1 <= '0;
             B_s1 <= '0;
             W_s1 <= '0;
-        end else if (en) begin
+        end else begin
             A_s1 <= A_in;
             B_s1 <= B_in;
             W_s1 <= W_in;
@@ -124,7 +124,7 @@ endfunction
             Tr_wide_s2 <= '0;
             Ti_wide_s2 <= '0;
             A_s2       <= '0;
-        end else if (en) begin
+        end else begin
             complex_mul_raw(B_s1, W_s1, Tr_wide_s2, Ti_wide_s2);
             // A_s2 <= A_s1;
         end
@@ -135,7 +135,7 @@ endfunction
         if (!rst_n) begin
             T_s3 <= '0;
             A_s3 <= '0;
-        end else if (en) begin
+        end else begin
             T_s3 <= fxp_truncate_f(Tr_wide_s2, Ti_wide_s2);
             A_s3 <= A_s1;
         end
@@ -146,7 +146,7 @@ endfunction
         if (!rst_n) begin
             A_reg_out <= '0;
             B_reg_out <= '0;
-        end else if (en) begin
+        end else begin
             complex_t sum, diff;
             complex_add(A_s3, T_s3, sum);   // A' = A + T
             complex_sub(A_s3, T_s3, diff);  // B' = A - T

@@ -185,7 +185,6 @@ module address_gen_unit (
 
             FLUSH: begin
                 ctrl.busy = 1'b1;
-                ctrl.in_valid = 1'b1;
                 // ctrl.in_valid = 0 here; no new butterflies issued
 
                 if (flush_cnt == 0) begin
