@@ -1,6 +1,6 @@
 import numpy as np
 
-N = 1024
+N = 16
 k = np.arange(N // 2)
 W = np.exp(-2j * np.pi * k / N)   # e^{-j2πk/N}
 
@@ -15,7 +15,7 @@ def to_16bit(x):
 Wr16 = to_16bit(Wr)
 Wi16 = to_16bit(Wi)
 
-with open("twiddle_1024.mem", "w") as f:
+with open("twiddle_rom.mem", "w") as f:
     for r, i in zip(Wr16, Wi16):
         word = (r << 16) | i
         f.write(f"{word:08X}\n")

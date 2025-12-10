@@ -36,7 +36,7 @@ module tb_fft ();
         // dump results or check outputs here
         @(posedge clk);
         $display("[TB] Dumping RAM B contents to fft_output.mem");
-        $writememh("fft_output.mem", dut.ram_b.mem);
+        $writememh("fft_output.mem", dut.ram0.mem);
 
         $finish;
     end

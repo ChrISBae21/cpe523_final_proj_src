@@ -1,3 +1,4 @@
+// address_gen_unit.sv
 import fft_consts::*;
 
 module address_gen_unit (
@@ -7,10 +8,15 @@ module address_gen_unit (
     localparam int N_LOG2_P = N_LOG2;
     localparam int N_P      = 1 << N_LOG2_P;
 
+    // How many cycles to wait for BFU + RAM pipeline to flush
+    localparam int FLUSH_CYCLES = BFU_LAT;
+    localparam int FLUSH_W      = (FLUSH_CYCLES <= 1) ? 1 : $clog2(FLUSH_CYCLES+1);
+
     // FSM states
     typedef enum logic [1:0] {
         INIT,   // idle / waiting for start
-        RUN,    // iterating butterflies over all stages
+        RUN,    // issuing butterflies
+        FLUSH,  // pipeline draining between stages
         DONE    // finished all stages
     } state_t;
 
@@ -26,6 +32,8 @@ module address_gen_unit (
     logic [N_LOG2_P-1:0] group_size;   // 2^(stage+1)
     logic [N_LOG2_P-1:0] num_groups;   // N / group_size
     logic [N_LOG2_P-1:0] group_base;   // base addr of current group
+    logic [N_LOG2_P-1:0] tw_step;      // NEW: N / group_size
+    logic [N_LOG2_P-1:0] exp;          // NEW: twiddle exponent
 
     logic                 last_j;
     logic                 last_group;
@@ -33,6 +41,9 @@ module address_gen_unit (
 
     // Ping-pong bank select (toggles once per stage)
     logic bank_sel_reg;
+
+    // Flush counter
+    logic [FLUSH_W-1:0] flush_cnt;
 
     // ------------------------------------------------------------
     // Derived combinational signals
@@ -47,6 +58,9 @@ module address_gen_unit (
 
         // current group's base address
         group_base = group_cnt << (stage_reg + 1);
+
+        tw_step    = N_P >> (stage_reg + 1);   // N / group_size
+        exp        = j_cnt * tw_step;          // twiddle exponent
 
         last_j         = (j_cnt     == (stride    - 1));
         last_group     = (group_cnt == (num_groups - 1));
@@ -64,14 +78,15 @@ module address_gen_unit (
     end
 
     // ------------------------------------------------------------
-    // Sequential counters and bank_sel
+    // Sequential counters, bank_sel, and flush counter
     // ------------------------------------------------------------
     always_ff @(posedge ctrl.clk) begin
         if (!ctrl.rst_n) begin
-            stage_reg   <= '0;
-            group_cnt   <= '0;
-            j_cnt       <= '0;
-            bank_sel_reg<= 1'b0;
+            stage_reg    <= '0;
+            group_cnt    <= '0;
+            j_cnt        <= '0;
+            bank_sel_reg <= 1'b0;
+            flush_cnt    <= '0;
         end else begin
             case (PS)
                 INIT: begin
@@ -79,33 +94,46 @@ module address_gen_unit (
                         stage_reg    <= '0;
                         group_cnt    <= '0;
                         j_cnt        <= '0;
-                        bank_sel_reg <= 1'b0;  // start with A->read, B->write
+                        bank_sel_reg <= 1'b0;   // start reading ram0, writing ram1
+                        flush_cnt    <= '0;
                     end
                 end
 
                 RUN: begin
+                    // normal butterfly stepping within this stage
+                    if (!last_butterfly) begin
+                        if (last_j) begin
+                            j_cnt     <= '0;
+                            group_cnt <= group_cnt + 1;
+                        end else begin
+                            j_cnt     <= j_cnt + 1;
+                        end
+                    end
+
+                    // When we hit the last butterfly of this stage, prepare to flush
                     if (last_butterfly) begin
-                        // Finished all butterflies in this stage
+                        flush_cnt <= FLUSH_CYCLES[FLUSH_W-1:0];
+                    end
+                end
+
+                FLUSH: begin
+                    // Count down until pipeline is empty
+                    if (flush_cnt != 0)
+                        flush_cnt <= flush_cnt - 1'b1;
+                    else begin
+                        // Flush done: either move to next stage or stay for DONE
                         if (stage_reg != (N_LOG2_P-1)) begin
-                            // move to next stage
                             stage_reg    <= stage_reg + 1;
                             group_cnt    <= '0;
                             j_cnt        <= '0;
                             bank_sel_reg <= ~bank_sel_reg; // swap banks
                         end
-                        // else: last stage, counters stay where they are
-                    end else if (last_j) begin
-                        // End of this group, move to next group
-                        j_cnt     <= '0;
-                        group_cnt <= group_cnt + 1;
-                    end else begin
-                        // Next butterfly within the same group
-                        j_cnt     <= j_cnt + 1;
+                        // For last stage we leave stage_reg as is; DONE state
                     end
                 end
 
                 DONE: begin
-                    // hold stage_reg/bank_sel_reg until next start
+                    // hold stage_reg / bank_sel / counters until next start
                 end
 
                 default: ;
@@ -114,7 +142,7 @@ module address_gen_unit (
     end
 
     // ------------------------------------------------------------
-    // Next-state and outputs (like your CU_FSM style)
+    // Next-state and outputs
     // ------------------------------------------------------------
     always_comb begin
         // Default: stay in same state
@@ -131,21 +159,13 @@ module address_gen_unit (
         ctrl.bank_sel    = bank_sel_reg;
 
         case (PS)
-            // ----------------------------------------------------
-            // INIT: wait for start
-            // ----------------------------------------------------
             INIT: begin
                 ctrl.busy = 1'b0;
                 ctrl.done = 1'b0;
-
-                if (ctrl.start) begin
+                if (ctrl.start)
                     NS = RUN;
-                end
             end
 
-            // ----------------------------------------------------
-            // RUN: generate addresses for all stages
-            // ----------------------------------------------------
             RUN: begin
                 ctrl.busy     = 1'b1;
                 ctrl.in_valid = 1'b1;
@@ -154,25 +174,33 @@ module address_gen_unit (
                 ctrl.rd_addrA = group_base + j_cnt;
                 ctrl.rd_addrB = ctrl.rd_addrA + stride;
 
-                // Twiddle index is butterfly index within group
-                // Range: 0 .. stride-1, fits in N_LOG2-1 bits
-                ctrl.twiddle_idx = j_cnt[N_LOG2_P-2:0];
+                // Twiddle index = j within group (0 .. stride-1)
+                ctrl.twiddle_idx = exp[N_LOG2_P-2:0];
 
-                // State transitions
-                if (last_butterfly && (stage_reg == (N_LOG2_P-1))) begin
-                    // Last butterfly of last stage
-                    NS = DONE;
+                // When we've issued the last butterfly of this stage, go flush
+                if (last_butterfly) begin
+                    NS = FLUSH;
                 end
             end
 
-            // ----------------------------------------------------
-            // DONE: one-shot done pulse; wait for start to drop
-            // ----------------------------------------------------
+            FLUSH: begin
+                ctrl.busy = 1'b1;
+                ctrl.in_valid = 1'b1;
+                // ctrl.in_valid = 0 here; no new butterflies issued
+
+                if (flush_cnt == 0) begin
+                    if (stage_reg == (N_LOG2_P-1))
+                        NS = DONE;  // last stage finished
+                    else
+                        NS = RUN;   // next stage
+                end
+            end
+
             DONE: begin
                 ctrl.busy = 1'b0;
                 ctrl.done = 1'b1;
 
-                // Require start to go low before we allow a new run
+                // Wait for start to go low before allowing a new run
                 if (!ctrl.start)
                     NS = INIT;
             end

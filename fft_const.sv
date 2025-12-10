@@ -1,5 +1,5 @@
 package fft_consts;
-    parameter N_LOG2 = 10;          // log2(1024)
+    parameter N_LOG2 = 4;          // log2(1024)
     parameter N      = 1 << N_LOG2;
     parameter DW     = 16;           // bits per real/imag
     
@@ -15,7 +15,7 @@ package fft_consts;
 //    parameter COMPLEX_ZERO = '{r: '0, i: '0};
     parameter DW_COMPLEX = $bits(complex_t);
 
-    parameter BFU_LAT = 3;    // BFU pipeline latency in cycles
+    parameter BFU_LAT = 4;    // BFU pipeline latency in cycles
 
 
 endpackage

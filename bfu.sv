@@ -136,7 +136,7 @@ endfunction
             T_s3 <= '0;
             A_s3 <= '0;
         end else if (en) begin
-            T_s3 <= fxp_truncate_f(Tr_wide_s2, Ti_wide_s2);  // clean, nonblocking
+            T_s3 <= fxp_truncate_f(Tr_wide_s2, Ti_wide_s2);
             A_s3 <= A_s2;
         end
     end

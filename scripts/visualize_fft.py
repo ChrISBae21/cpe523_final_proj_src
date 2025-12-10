@@ -71,6 +71,21 @@ def load_mem_file(path: str) -> np.ndarray:
         data[i] = q15_from_word32(w)
     return data
 
+def bit_reverse_indices(N: int):
+    """Return a list of bit-reversed indices for length N."""
+    nbits = int(np.log2(N))
+    idx = np.arange(N)
+    rev = np.zeros(N, dtype=int)
+    for i in range(N):
+        b = i
+        r = 0
+        for _ in range(nbits):
+            r = (r << 1) | (b & 1)
+            b >>= 1
+        rev[i] = r
+    return rev
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -97,6 +112,12 @@ def main():
         default="FFT Visualization",
         help="Figure title.",
     )
+    
+    parser.add_argument(
+        "--bitrev",
+        action="store_true",
+        help="Treat input as bit-reversed order and reorder to natural bin order before plotting.",
+    )
 
     args = parser.parse_args()
 
@@ -104,6 +125,13 @@ def main():
     X = load_mem_file(args.mem_file)
     N = len(X)
     print(f"[INFO] Loaded {N} complex bins.")
+    
+    if args.bitrev:
+        if (N & (N - 1)) != 0:
+            raise SystemExit("[ERROR] --bitrev only valid for power-of-two length")
+        perm = bit_reverse_indices(N)
+        X = X[perm]
+        print("[INFO] Applied bit-reversal permutation to bins.")
 
     mag = np.abs(X)
     real = X.real
