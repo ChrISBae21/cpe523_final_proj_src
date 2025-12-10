@@ -1,9 +1,18 @@
 import fft_consts::*;
 
-module ram_dp (
+module ram_dp #(
+    parameter INIT_FILE = 0,
+    parameter MEM_INIT_FILE = ""
+    ) (
     dp_ram_if.port_a a,
     dp_ram_if.port_b b
 );
+
+    if (INIT_FILE) begin
+        initial begin
+            $readmemh(MEM_INIT_FILE, mem);
+        end
+    end
 
     logic [DW-1:0] mem [0:N-1];
 

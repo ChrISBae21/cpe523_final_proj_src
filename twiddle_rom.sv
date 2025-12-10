@@ -15,6 +15,6 @@ module twiddle_rom (
     always_ff @(posedge clk) begin
         data_out.r <= rom_real[addr][DW-1:0];
         data_out.i <= rom_real[addr][DW_COMPLEX-1:DW];
-    end
+    end 
 
 endmodule
