@@ -1,5 +1,5 @@
 package fft_consts;
-    parameter N_LOG2 = 4;          // log2(1024)
+    parameter N_LOG2 = 10;          // log2(1024)
     parameter N      = 1 << N_LOG2;
     parameter DW     = 16;           // bits per real/imag
     
@@ -7,7 +7,7 @@ package fft_consts;
     parameter FRAC_BITS = 15;
     parameter FP_BITS = SIGN_BITS + FRAC_BITS;
     
-    typedef struct packed {
+typedef struct packed {
         logic [FP_BITS-1:0] r;
         logic [FP_BITS-1:0] i;
     } complex_t;

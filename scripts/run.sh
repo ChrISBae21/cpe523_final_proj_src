@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-N=16
+N=1024
 SIGNAL="sine"
-K=2
+K=16
 
 # 1) Generate twiddle ROM
 python3 twiddle_gen.py --N "$N" --frac_bits 15 --outfile twiddle_rom.mem
