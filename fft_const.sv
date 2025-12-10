@@ -3,9 +3,13 @@ package fft_consts;
     parameter N      = 1 << N_LOG2;
     parameter DW     = 16;           // bits per real/imag
     
+    parameter SIGN_BITS = 1;
+    parameter FRAC_BITS = 15;
+    parameter FP_BITS = SIGN_BITS + FRAC_BITS;
+    
     typedef struct packed {
-        logic [DW-1:0] r;
-        logic [DW-1:0] i;
+        logic [FP_BITS-1:0] r;
+        logic [FP_BITS-1:0] i;
     } complex_t;
     
 //    parameter COMPLEX_ZERO = '{r: '0, i: '0};
