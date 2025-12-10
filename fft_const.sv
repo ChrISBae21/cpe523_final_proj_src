@@ -15,6 +15,8 @@ package fft_consts;
 //    parameter COMPLEX_ZERO = '{r: '0, i: '0};
     parameter DW_COMPLEX = $bits(complex_t);
 
+    parameter BFU_LAT = 5;    // BFU pipeline latency in cycles
+
 
 endpackage
 
@@ -100,4 +102,42 @@ interface dp_ram_if (input logic clk);
             data  = doutb;
         endtask
 
-    endinterface
+endinterface
+
+interface agu_if (input logic clk, input logic rst);
+        import fft_consts::*;
+
+        // Control in
+        logic              start;       // pulse/high to start an FFT
+
+        // Status out
+        logic              busy;        // AGU is running
+        logic              done;        // FFT complete
+        logic [N_LOG2-1:0] stage;       // current stage index
+
+        // Read-side (to drive RAM read addresses & twiddle ROM)
+        logic [N_LOG2-1:0] rd_addrA;    // address of butterfly input A
+        logic [N_LOG2-1:0] rd_addrB;    // address of butterfly input B
+        logic [N_LOG2-2:0] twiddle_idx; // index into twiddle ROM (0 .. N/2-1)
+        logic              in_valid;    // BFU input valid this cycle
+
+        // Bank select: which RAM is read vs written this stage
+        //   0: read from RAM A, write to RAM B
+        //   1: read from RAM B, write to RAM A
+        logic              bank_sel;
+
+        // Modport for the FSM-style control unit
+        modport fsm (
+            input  clk,
+            input  rst,
+            input  start,
+            output busy,
+            output done,
+            output stage,
+            output rd_addrA,
+            output rd_addrB,
+            output twiddle_idx,
+            output in_valid,
+            output bank_sel
+        );
+endinterface

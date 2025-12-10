@@ -14,7 +14,7 @@ module ram_dp #(
         end
     end
 
-    logic [DW-1:0] mem [0:N-1];
+    logic [DW_COMPLEX-1:0] mem [0:N-1];
 
     // Port A operations
     always_ff @(posedge a.clk) begin

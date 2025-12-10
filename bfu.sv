@@ -5,7 +5,7 @@ import fft_consts::*;
 
 module bfu (
     input logic clk,
-    input logic rst,
+    input logic rst_n,
 
     input complex_t A_in,
     input complex_t B_in,
@@ -111,7 +111,7 @@ module bfu (
 
     // Stage 0 -> Stage 1: register inputs
     always_ff @(posedge clk) begin
-        if (rst) begin
+        if (!rst_n) begin
             A_s1 <= '0;
             B_s1 <= '0;
             W_s1 <= '0;
@@ -124,7 +124,7 @@ module bfu (
 
     // Stage 1 -> Stage 2: compute wide complex product T = B*W
     always_ff @(posedge clk) begin
-        if (rst) begin
+        if (!rst_n) begin
             Tr_wide_s2 <= '0;
             Ti_wide_s2 <= '0;
         end else begin
@@ -134,7 +134,7 @@ module bfu (
 
     // Stage 2 -> Stage 3: truncate T and align A
     always_ff @(posedge clk) begin
-        if (rst) begin
+        if (!rst_n) begin
             T_s3  <= '0;
             A_s3  <= '0;
         end else begin
@@ -145,7 +145,7 @@ module bfu (
 
     // Stage 3: final butterfly add/sub and register outputs
     always_ff @(posedge clk) begin
-        if (rst) begin
+        if (!rst_n) begin
             A_reg_out <= '0;
             B_reg_out <= '0;
         end else begin
