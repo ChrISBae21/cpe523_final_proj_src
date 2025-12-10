@@ -245,24 +245,6 @@ def compute_fft_fixed_paper_style(data: np.ndarray) -> np.ndarray:
     return out
 
 
-def compare_results(ref: np.ndarray, hw: np.ndarray) -> Tuple[float, float, float]:
-    """
-    Compare two complex arrays (float):
-      - max absolute error (magnitude),
-      - mean absolute error,
-      - RMS error.
-    """
-    if len(ref) != len(hw):
-        raise ValueError(f"Length mismatch: ref={len(ref)}, hw={len(hw)}")
-
-    diff = ref - hw
-    abs_err = np.abs(diff)
-    max_err = np.max(abs_err)
-    mean_err = np.mean(abs_err)
-    rms_err = np.sqrt(np.mean(abs_err**2))
-    return max_err, mean_err, rms_err
-
-
 def main():
     parser = argparse.ArgumentParser(description="FFT reference checker (paper-style fixed-point)")
     parser.add_argument(
@@ -276,12 +258,7 @@ def main():
         help="Output memory file path for expected FFT result (packed Q1.15)."
     )
     parser.add_argument(
-        "--hw_mem",
-        default=None,
-        help="Optional: hardware output memory file to compare against."
-    )
-    parser.add_argument(
-        "--n",
+        "--N",
         type=int,
         default=None,
         help="FFT length (optional; defaults to length of in_mem)."
@@ -293,8 +270,8 @@ def main():
     data_in = load_mem_file(args.in_mem)
     print(f"[INFO] Loaded {len(data_in)} complex samples.")
 
-    if args.n is not None and args.n != len(data_in):
-        print(f"[WARN] Provided N={args.n}, but file has {len(data_in)} samples. "
+    if args.N is not None and args.N != len(data_in):
+        print(f"[WARN] Provided N={args.N}, but file has {len(data_in)} samples. "
               f"Using N={len(data_in)} (file length).")
 
     N = len(data_in)
@@ -306,27 +283,6 @@ def main():
     # Write reference output
     print(f"[INFO] Writing expected FFT output to {args.out_ref_mem}")
     write_mem_file(args.out_ref_mem, fft_out)
-
-    # Optional comparison with hardware result
-    if args.hw_mem is not None:
-        print(f"[INFO] Loading hardware output from {args.hw_mem}")
-        hw_out = load_mem_file(args.hw_mem)
-
-        if len(hw_out) != N:
-            print(f"[ERROR] Hardware mem length {len(hw_out)} != input length {N}")
-            return
-
-        # fft_out and hw_out are both float; fft_out already includes fixed-point wrap behavior
-        max_err, mean_err, rms_err = compare_results(fft_out, hw_out)
-        print("[RESULT] Comparison vs hardware output:")
-        print(f"         Max abs error  : {max_err:.6e}")
-        print(f"         Mean abs error : {mean_err:.6e}")
-        print(f"         RMS error      : {rms_err:.6e}")
-
-        print("\n[DEBUG] First 8 bins (ref vs hw):")
-        for i in range(min(8, N)):
-            print(f"  k={i:2d}: ref={fft_out[i]: .6f}, hw={hw_out[i]: .6f}, "
-                  f"diff={fft_out[i]-hw_out[i]: .6e}")
 
     print("[INFO] Done.")
 
