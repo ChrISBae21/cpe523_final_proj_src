@@ -15,7 +15,7 @@ package fft_consts;
 //    parameter COMPLEX_ZERO = '{r: '0, i: '0};
     parameter DW_COMPLEX = $bits(complex_t);
 
-    parameter BFU_LAT = 5;    // BFU pipeline latency in cycles
+    parameter BFU_LAT = 3;    // BFU pipeline latency in cycles
 
 
 endpackage
@@ -27,15 +27,15 @@ interface dp_ram_if (input logic clk);
         logic              ena;
         logic              wea;
         logic [N_LOG2-1:0] addra;
-        logic [DW-1:0]     dina;
-        logic [DW-1:0]     douta;
+        logic [DW_COMPLEX-1:0] dina;   // FULL complex word
+        logic [DW_COMPLEX-1:0] douta;
         
         // Port B
         logic              enb;
         logic              web;
         logic [N_LOG2-1:0] addrb;
-        logic [DW-1:0]     dinb;
-        logic [DW-1:0]     doutb;
+        logic [DW_COMPLEX-1:0] dinb;   // FULL complex word
+        logic [DW_COMPLEX-1:0] doutb;
 
         modport port_a (
             input  clk,
@@ -104,7 +104,7 @@ interface dp_ram_if (input logic clk);
 
 endinterface
 
-interface agu_if (input logic clk, input logic rst);
+interface agu_if (input logic clk, input logic rst_n);
         import fft_consts::*;
 
         // Control in
@@ -129,7 +129,7 @@ interface agu_if (input logic clk, input logic rst);
         // Modport for the FSM-style control unit
         modport fsm (
             input  clk,
-            input  rst,
+            input  rst_n,
             input  start,
             output busy,
             output done,

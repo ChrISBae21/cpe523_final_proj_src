@@ -22,16 +22,22 @@ module tb_fft ();
     initial begin
         rst_n = 1;
         start = 0;
-        #20;
+        @(posedge clk);
         rst_n = 0;
-        #20;
+        @(posedge clk);
         rst_n = 1;
+        @(posedge clk);
         start = 1;
-        #10;
+        @(posedge clk);
         start = 0;
 
-        // wait (done);
-        repeat (50) @(posedge clk);
+        wait (done);
+        
+        // dump results or check outputs here
+        @(posedge clk);
+        $display("[TB] Dumping RAM B contents to fft_output.mem");
+        $writememh("fft_output.mem", dut.ram_b.mem);
+
         $finish;
     end
 

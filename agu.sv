@@ -57,7 +57,7 @@ module address_gen_unit (
     // State register
     // ------------------------------------------------------------
     always_ff @(posedge ctrl.clk) begin
-        if (ctrl.rst)
+        if (!ctrl.rst_n)
             PS <= INIT;
         else
             PS <= NS;
@@ -67,7 +67,7 @@ module address_gen_unit (
     // Sequential counters and bank_sel
     // ------------------------------------------------------------
     always_ff @(posedge ctrl.clk) begin
-        if (ctrl.rst) begin
+        if (!ctrl.rst_n) begin
             stage_reg   <= '0;
             group_cnt   <= '0;
             j_cnt       <= '0;
