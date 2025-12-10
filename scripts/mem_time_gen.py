@@ -1,33 +1,7 @@
-"""
-gen_ramA_init.py
-
-Generate an initial RAM file for FFT testing.
-
-- Output format: one 32-bit hex word per line
-    REAL[31:16] = signed Q1.15
-    IMAG[15:0]  = signed Q1.15
-
-- Patterns:
-    impulse : x[0] = 1.0, others = 0
-    sine    : single-tone sine wave at bin k
-    noise   : uniform noise in [-0.5, 0.5)
-
-Usage examples:
-
-    # Default: impulse, N=1024, ramA_init.mem
-    python gen_ramA_init.py
-
-    # Sine wave at bin 5, N=1024
-    python gen_ramA_init.py --pattern sine --k 5 --amp 0.8
-
-    # Noise, different length, custom file
-    python gen_ramA_init.py --pattern noise --N 256 --out ramA_init_256.mem
-"""
-
+#!/usr/bin/env python3
 import argparse
 import math
 import numpy as np
-
 
 FRAC = 15
 SCALE = 1 << FRAC

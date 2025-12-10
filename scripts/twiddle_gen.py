@@ -1,21 +1,9 @@
 #!/usr/bin/env python3
-"""
-twiddle_gen.py
 
+'''
 Generate a twiddle ROM .mem file for a radix-2 FFT.
+'''
 
-For an FFT of length N, this creates N/2 twiddle factors:
-
-    W_N^k = exp(-j 2π k / N),  k = 0..N/2-1
-
-Each twiddle is stored as a 32-bit hex word:
-    [31:16] = real (signed Q1.frac_bits)
-    [15:0]  = imag (signed Q1.frac_bits)
-
-Usage examples:
-    python twiddle_gen.py --n 1024
-    python twiddle_gen.py --n 16 --frac_bits 15 --outfile twiddle_rom_16.mem
-"""
 
 import argparse
 import numpy as np
@@ -31,13 +19,6 @@ def to_int16_wrap(x: np.ndarray) -> np.ndarray:
 
 
 def gen_twiddles_q_format(N: int, frac_bits: int) -> np.ndarray:
-    """
-    Generate N/2 twiddles W_N^k in Q1.frac_bits format:
-        W_N^k = exp(-j 2π k / N), k=0..N/2-1
-
-    Returns an array of 32-bit words:
-        [31:16] = REAL, [15:0] = IMAG
-    """
     if N & (N - 1) != 0:
         raise ValueError("N must be a power of 2 for radix-2 FFT.")
 
@@ -61,7 +42,7 @@ def gen_twiddles_q_format(N: int, frac_bits: int) -> np.ndarray:
 
 def write_mem_file(path: str, words: np.ndarray):
     """
-    Write 32-bit words to a .mem file as 8-hex-digit lines.
+    Write 32-bit words to a .mem file as 8 hex digit lines.
     """
     with open(path, "w") as f:
         for w in words:

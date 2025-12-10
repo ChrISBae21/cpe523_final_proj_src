@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""
-fft_visualize.py
-
-Given a time-domain Q1.15 .mem file:
-
-  1. Load it as complex float.
-  2. Compute:
-       - NumPy FFT: X_np (normalized by 1/N)
-       - DIT FFT (paper-style): X_dit (fixed-point reference)
-  3. Print error metrics between X_np and X_dit.
-  4. Plot ONLY the magnitude spectra |X_np[k]| and |X_dit[k]|,
-     in two side-by-side subplots (not overlapped).
-
-Usage examples:
-
-  python fft_visualize.py --time_mem sine_time.mem
-  python fft_visualize.py --time_mem sine_time.mem --fs 20000 --half
-"""
-
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt

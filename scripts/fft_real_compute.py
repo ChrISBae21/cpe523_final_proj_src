@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""
-fft_real_compute.py
-
-Compute a "real" FFT using numpy.fft.fft on a Q1.15 .mem time-domain file.
-
-CLI:
-    python fft_real_compute.py --in_mem sine_time.mem --out_mem sine_freq_np.mem --n 1024
-"""
 
 import argparse
 import numpy as np

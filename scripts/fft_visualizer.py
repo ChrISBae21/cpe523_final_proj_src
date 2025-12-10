@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-fft_visualizer.py
-
-Visualize a single complex Q1.15 .mem file (assumed FFT bins).
-
-Assumes:
-  - One 32-bit hex word per line.
-  - REAL[31:16] and IMAG[15:0] are signed Q1.15.
-
-No FFT computations are performed. It only reads and visualizes the data.
-
-Usage:
-    python fft_visualizer.py --mem_file fft_hw_out.mem
-    python fft_visualizer.py --mem_file fft_hw_out.mem --fs 20000 --half
-"""
-
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,12 +17,6 @@ def parse_hex_line(line: str) -> int:
 
 
 def q15_from_word32(word: int) -> complex:
-    """
-    Unpack a 32-bit word into a complex number in float,
-    assuming:
-        [31:16] = real (Q1.15 signed)
-        [15:0]  = imag (Q1.15 signed)
-    """
     real_raw = (word >> 16) & 0xFFFF
     imag_raw = word & 0xFFFF
 
@@ -87,10 +65,6 @@ def bit_reverse_indices(N: int) -> np.ndarray:
 
 
 def bit_reverse_array(x: np.ndarray) -> np.ndarray:
-    """
-    Reorder x into natural order if it is currently in bit-reversed order,
-    or vice versa (bit-reversal is its own inverse).
-    """
     N = x.shape[0]
     idx = bit_reverse_indices(N)
     return x[idx]

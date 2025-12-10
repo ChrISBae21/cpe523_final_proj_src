@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-fft_compute.py
-
-Compute a radix-2 DIT FFT that mirrors the "paper-style" algorithm:
-
-- Stages s = 0 .. log2(N)-1
-- stride     = 2^s
-- group_size = 2^(s+1)
-- tw_step    = N / group_size
-- twiddle exponent = j * tw_step, j in [0..stride-1]
-
-This matches your AGU logic:
-
-    stride     = 1 << stage
-    group_size = stride << 1
-    tw_step    = N >> (stage + 1)
-    exp        = j * tw_step
-
-CLI:
-    python fft_compute.py --in_mem sine_time.mem --out_ref_mem sine_freq_dit.mem --n 1024
-"""
-
 import argparse
 import math
 import numpy as np
@@ -89,11 +67,6 @@ def to_int16(x: int) -> int:
     return x
 
 def gen_twiddles_q15(N: int) -> List[Tuple[int, int]]:
-    """
-    Generate Q1.15 twiddles W_N^k for k = 0..N/2-1:
-
-        W_N^k = exp(-j 2π k / N)
-    """
     table: List[Tuple[int, int]] = []
     half = N // 2
     for k in range(half):
@@ -121,13 +94,6 @@ def c_sub_q15(a, b):
 
 
 def c_mul_q15(a: Tuple[int, int], b: Tuple[int, int]) -> Tuple[int, int]:
-    """
-    (ar + j ai) * (br + j bi) in Q1.15:
-      - 16x16->32-bit products
-      - sum/sub
-      - arithmetic >> FRAC_BITS
-      - wrap to 16 bits (no saturation).
-    """
     ar, ai = a
     br, bi = b
 
@@ -175,17 +141,6 @@ def write_mem_file(path: str, data: np.ndarray):
 # DIT FFT implementation
 # ----------------------------
 def compute_fft_dit(data: np.ndarray) -> np.ndarray:
-    """
-    Compute FFT using the same style as the tutorial / hardware:
-      - radix-2 DIT
-      - Q1.15 fixed point
-      - quantized twiddles
-      - in-place (bit-reversed output), no reordering
-
-    `data` is a numpy complex float array (from q15_from_word32).
-    Returns a numpy complex float array representing the final Q1.15 contents
-    (converted back to float for convenience).
-    """
     N = len(data)
     if N & (N - 1) != 0:
         raise ValueError("FFT length must be a power of 2")
@@ -270,11 +225,6 @@ def bit_reverse_array(x: np.ndarray) -> np.ndarray:
 
 
 def bit_reverse_mem(in_mem: str, out_mem: str) -> None:
-    """
-    Load a .mem file, bit-reverse its *index order*, and write to a new .mem file.
-      - in_mem:  path to input .mem (Q1.15 complex)
-      - out_mem: path to output .mem (Q1.15 complex, bit-reversed order)
-    """
     x = load_mem_file(in_mem)          # complex float array
     x_br = bit_reverse_array(x)
     write_mem_file(out_mem, x_br)
@@ -282,16 +232,6 @@ def bit_reverse_mem(in_mem: str, out_mem: str) -> None:
 
 
 def bit_reverse_data(data: Union[str, np.ndarray], out_mem: str | None = None) -> np.ndarray:
-    """
-    Convenience wrapper:
-
-      - If 'data' is a numpy array, return bit-reversed copy of that array.
-      - If 'data' is a string (path to .mem), load the file, bit-reverse, and:
-          * if out_mem is not None: write to that file
-          * always return the bit-reversed array.
-
-    This is handy for both scripts and interactive use.
-    """
     if isinstance(data, str):
         x = load_mem_file(data)
         x_br = bit_reverse_array(x)
